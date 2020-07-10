@@ -18,6 +18,15 @@ const modalFileInput = document.querySelector('.modal__file-input');
 const modalFileBtn = document.querySelector('.modal__file-btn');
 const modalImageAdd = document.querySelector('.modal__image-add');
 
+const modalImageItem = document.querySelector('.modal__image-item');
+const modalHeaderItem = document.querySelector('.modal__header-item');
+const modalStatusItem = document.querySelector('.modal__status-item');
+const modalDescriptionItem = document.querySelector('.modal__description-item');
+const modalCostItem = document.querySelector('.modal__cost-item');
+
+const searchInput = document.querySelector('.search__input');
+
+const menuContainer = document.querySelector('.menu__container');
 
 //Обернули в масив спред опертором все элементы
 const elementsModalSubmit = [...modalSubmit.elements]
@@ -55,11 +64,11 @@ const modalClose = (event) => {
 }
 
 
-const renderCard = () => {
+const renderCard = (db = dataBase) => {
     catalog.textContent = '';
-    dataBase.forEach((element, i) => {
+    db.forEach((element, i) => {
         catalog.insertAdjacentHTML('beforeend', `
-                <li class="card" data-id="${i}">
+                <li class="card" data-id="${element.id}">
                     <img class="card__image" src="data:image/jpeg;base64,${element.image}" alt="test">
                     <div class="card__description">
                         <h3 class="card__header">${element.nameItem} </h3>
@@ -84,6 +93,15 @@ const renderCard = () => {
 // Работа с модалным окном Добавить объявление
 
 
+menuContainer.addEventListener('click', event => {
+    const target = event.target
+    if (target.tagName === 'A') {
+        const result = dataBase.filter(item => item.category === target.dataset.category);
+        renderCard(result);
+    }
+
+});
+
 addAd.addEventListener('click', () => {
     modalAdd.classList.remove('hide');
     modalBtnSubmin.disabled = true;
@@ -101,27 +119,19 @@ catalog.addEventListener('click', (event) => {
 
     if (card) {
         const id = card.dataset.id;
+        console.log(id);
+
+        const result = dataBase.find(item => item.id === +card.dataset.id);
+        status = result.status === "new" ? 'Новый' : 'Б/у';
+        //заполняем форму
+        modalImageItem.src = `data:image/jpeg;base64,${result.image}`;
+        modalHeaderItem.textContent = result.nameItem;
+        modalStatusItem.textContent = status;
+        modalDescriptionItem.textContent = result.descriptionItem;
+        modalCostItem.textContent = result.costItem;
+        // показываем форму
         modalItem.classList.remove('hide');
         document.body.addEventListener('keydown', modalClose);
-        const status = dataBase[id].status === "new" ? 'Новый' : 'Б/у';
-        modalItem.innerHTML = `
-        <div class="modal__block">
-            <h2 class="modal__header">Купить</h2>
-            <div class="modal__content">
-                <div><img class="modal__image modal__image-item" src="img/temp.jpg" alt="test"></div>
-                <div class="modal__description">
-                    <h3 class="modal__header-item">${dataBase[id].nameItem}</h3>
-                    <p>Состояние: <span class="modal__status-item">${status}</span></p>
-                    <p>Описание:
-                        <span class="modal__description-item">${dataBase[id].descriptionItem}</span>
-                    </p>
-                    <p>Цена: <span class="modal__cost-item">${dataBase[id].costItem} ₽</span></p>
-                    <button class="btn">Купить</button>
-                </div>
-            </div>
-            <button class="modal__close">&#10008;</button>
-        </div>
-        `;
 
     }
 })
@@ -155,19 +165,28 @@ modalSubmit.addEventListener('submit', event => {
     event.preventDefault();
     const itemObj = {};
     for (const elem of elementsModalSubmit) {
-        // console.log(elem.name);
-        // console.log(elem.value);
         itemObj[elem.name] = elem.value
-
     }
     modalClose({ target: modalAdd });
     itemObj.image = infoFoto.base64;
+    itemObj.id = dataBase.length + 1;
     dataBase.push(itemObj);
     saveDb();
     renderCard();
-    console.log(dataBase);
+    // console.log(dataBase);
     // modalClose({ target: modalAdd });
 
 })
+
+searchInput.addEventListener('input', () => {
+    const valueSearch = searchInput.value.trim().toLowerCase();
+    if (valueSearch.length > 2) {
+        console.log(valueSearch);
+        const result = dataBase.filter(item => item.nameItem.toLowerCase().includes(valueSearch));
+        console.log(result);
+        renderCard(result);
+
+    }
+});
 
 renderCard();
